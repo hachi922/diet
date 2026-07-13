@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#5E9275">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="からだ記録">
+<title>からだ記録帳</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root{
+  --bg:#F2F5F1;
+  --paper:#FFFFFF;
+  --ink:#33403A;
+  --sub:#7A8680;
+  --line:#DFE6E0;
+  --morning:#5E9275;
+  --morning-soft:#E4EFE8;
+  --evening:#8377AB;
+  --evening-soft:#ECE8F4;
+  --sakura:#E7A9B8;
+  --sakura-soft:#FBEEF1;
+  --danger:#C46A5A;
+  --radius:14px;
+  --shadow:0 2px 10px rgba(51,64,58,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+  background:var(--bg);color:var(--ink);
+  font-size:15px;line-height:1.7;
+  padding-bottom:calc(70px + env(safe-area-inset-bottom));
+}
+@media(min-width:768px){body{padding-bottom:40px}}
+
+/* ---------- header ---------- */
+header{
+  background:var(--paper);border-bottom:1px solid var(--line);
+  padding:12px 16px;display:flex;align-items:center;gap:10px;
+  position:sticky;top:0;z-index:50;
+}
+header h1{font-size:17px;font-weight:700;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+header h1 i{color:var(--morning)}
+.spacer{flex:1}
+.status{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.status .dot{width:8px;height:8px;border-radius:50%;background:#C9CFC9}
+.status.on .dot{background:var(--morning)}
+.iconbtn{
+  border:1px solid var(--line);background:var(--paper);color:var(--ink);
+  width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;flex:none;
+}
+.iconbtn:hover{background:var(--bg)}
+
+/* ---------- tabs ---------- */
+nav.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:var(--paper);border-top:1px solid var(--line);
+  display:flex;padding-bottom:env(safe-area-inset-bottom);
+}
+nav.tabs button{
+  flex:1;background:none;border:none;padding:9px 0 7px;cursor:pointer;
+  color:var(--sub);font-family:inherit;font-size:11px;line-height:1.3;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+nav.tabs button i{font-size:20px}
+nav.tabs button.active{color:var(--morning);font-weight:700}
+@media(min-width:768px){
+  nav.tabs{
+    position:static;border:none;background:none;
+    max-width:860px;margin:18px auto 0;padding:0 20px;gap:8px;justify-content:flex-start;
+  }
+  nav.tabs button{
+    flex:none;flex-direction:row;gap:7px;font-size:14px;
+    padding:9px 18px;border-radius:999px;border:1px solid var(--line);background:var(--paper);
+  }
+  nav.tabs button i{font-size:16px}
+  nav.tabs button.active{background:var(--morning);border-color:var(--morning);color:#fff}
+}
+
+main{max-width:860px;margin:0 auto;padding:16px}
+section.view{display:none}
+section.view.active{display:block}
+
+/* ---------- cards / form ---------- */
+.card{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px;margin-bottom:14px;
+}
+.card h2{
+  font-size:14px;font-weight:700;color:var(--ink);letter-spacing:.05em;
+  display:flex;align-items:center;gap:7px;margin-bottom:12px;
+}
+.card h2 i{color:var(--morning);font-size:15px}
+label.fl{display:block;font-size:12px;color:var(--sub);margin-bottom:4px;letter-spacing:.04em}
+input[type=date],input[type=number],input[type=text],textarea{
+  width:100%;border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;font:inherit;font-size:16px;color:var(--ink);background:#FCFDFC;
+}
+input:focus,textarea:focus{outline:2px solid var(--morning);outline-offset:1px;border-color:var(--morning)}
+textarea{resize:vertical;min-height:96px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.wfield{border-radius:12px;padding:12px}
+.wfield.morning{background:var(--morning-soft)}
+.wfield.evening{background:var(--evening-soft)}
+.wfield .wlabel{font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.wfield.morning .wlabel{color:var(--morning)}
+.wfield.evening .wlabel{color:var(--evening)}
+.wwrap{display:flex;align-items:center;gap:6px}
+.wwrap input{text-align:right;font-weight:700;font-size:20px}
+.wwrap span{font-size:13px;color:var(--sub)}
+
+.togglegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{
+  flex:1;border:none;background:#FCFDFC;padding:9px 0;font:inherit;font-size:14px;
+  color:var(--sub);cursor:pointer;
+}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.sel{background:var(--morning);color:#fff;font-weight:700}
+.seg.pink button.sel{background:var(--sakura)}
+
+.hint{font-size:12px;color:var(--sub);margin-top:6px}
+
+/* photos */
+.photobar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.thumb{
+  width:74px;height:74px;border-radius:10px;object-fit:cover;
+  border:1px solid var(--line);background:var(--bg);
+}
+.thumbwrap{position:relative}
+.thumbwrap .del{
+  position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;
+  border:none;background:var(--danger);color:#fff;font-size:12px;cursor:pointer;line-height:1;
+}
+.addphoto{
+  width:74px;height:74px;border-radius:10px;border:1.5px dashed var(--line);
+  background:none;color:var(--sub);font-size:22px;cursor:pointer;
+}
+.addphoto:hover{border-color:var(--morning);color:var(--morning)}
+
+.savebtn{
+  width:100%;border:none;border-radius:12px;padding:14px;
+  background:var(--morning);color:#fff;font:inherit;font-size:16px;font-weight:700;
+  letter-spacing:.1em;cursor:pointer;box-shadow:var(--shadow);
+}
+.savebtn:disabled{opacity:.5;cursor:default}
+.savebtn:hover:not(:disabled){filter:brightness(1.05)}
+
+/* ---------- chart ---------- */
+.chartmodes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{
+  border:1px solid var(--line);background:var(--paper);border-radius:999px;
+  padding:7px 15px;font:inherit;font-size:13px;color:var(--sub);cursor:pointer;
+}
+.chip.sel{font-weight:700;color:#fff}
+.chip.sel.m{background:var(--morning);border-color:var(--morning)}
+.chip.sel.e{background:var(--evening);border-color:var(--evening)}
+.chip.sel.b{background:var(--ink);border-color:var(--ink)}
+.chip.sel.p{background:var(--sub);border-color:var(--sub)}
+.chartbox{position:relative;height:300px}
+@media(min-width:768px){.chartbox{height:380px}}
+.legendnote{font-size:12px;color:var(--sub);margin-top:8px;display:flex;align-items:center;gap:6px}
+.legendnote .sk{width:9px;height:9px;border-radius:50%;background:var(--sakura);display:inline-block}
+
+/* ---------- records: mobile cards ---------- */
+.rec{
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:14px 16px;margin-bottom:12px;
+}
+.rec .rhead{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.rec .rdate{font-weight:700;font-size:15px}
+.badge{
+  font-size:11px;border-radius:999px;padding:2px 9px;font-weight:700;letter-spacing:.03em;
+}
+.badge.bm{background:var(--morning-soft);color:var(--morning)}
+.badge.pk{background:var(--sakura-soft);color:#C77A8E}
+.rec .weights{display:flex;gap:14px;margin-bottom:6px;font-size:14px}
+.rec .weights .m{color:var(--morning);font-weight:700}
+.rec .weights .e{color:var(--evening);font-weight:700}
+.rec .fieldrow{font-size:13px;margin-top:5px;white-space:pre-wrap;word-break:break-word}
+.rec .fieldrow .fl2{color:var(--sub);font-size:11px;display:block}
+.rec .rphotos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.rec .rphotos img{width:60px;height:60px;border-radius:8px;object-fit:cover;border:1px solid var(--line)}
+.rec .editbtn{
+  border:1px solid var(--line);background:none;border-radius:8px;padding:4px 12px;
+  font:inherit;font-size:12px;color:var(--sub);cursor:pointer;margin-left:auto;
+}
+.rec .editbtn:hover{color:var(--morning);border-color:var(--morning)}
+
+/* ---------- records: PC table ---------- */
+.tablewrap{display:none}
+@media(min-width:768px){
+  .reclist{display:none}
+  .tablewrap{display:block;overflow-x:auto;background:var(--paper);
+    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:var(--bg);font-size:12px;color:var(--sub);font-weight:700;white-space:nowrap;letter-spacing:.04em}
+  td.num{text-align:right;white-space:nowrap;font-weight:700}
+  td.num.m{color:var(--morning)} td.num.e{color:var(--evening)}
+  td .pre{white-space:pre-wrap;max-width:260px;word-break:break-word}
+  td img{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line);margin:1px}
+  tr:hover td{background:#FAFCFA}
+  td .editbtn{border:1px solid var(--line);background:none;border-radius:8px;padding:3px 10px;
+    font:inherit;font-size:12px;color:var(--sub);cursor:pointer}
+  td .editbtn:hover{color:var(--morning);border-color:var(--morning)}
+}
+
+/* ---------- modal ---------- */
+.modal{
+  position:fixed;inset:0;background:rgba(51,64,58,.4);z-index:100;
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal.open{display:flex}
+.modal .mbox{
+  background:var(--paper);border-radius:var(--radius);max-width:460px;width:100%;
+  padding:20px;max-height:85vh;overflow-y:auto;
+}
+.mbox h2{font-size:16px;margin-bottom:6px}
+.mbox p{font-size:12px;color:var(--sub);margin-bottom:14px}
+.mbox label.fl{margin-top:12px}
+.mrow{display:flex;gap:10px;margin-top:18px}
+.mrow button{flex:1;border-radius:10px;padding:11px;font:inherit;font-size:14px;cursor:pointer}
+.btn-p{background:var(--morning);color:#fff;border:none;font-weight:700}
+.btn-s{background:none;border:1px solid var(--line);color:var(--sub)}
+
+/* toast */
+#toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));
+  background:var(--ink);color:#fff;font-size:13px;padding:10px 18px;border-radius:999px;
+  opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;max-width:90vw;text-align:center;
+}
+#toast.show{opacity:.95}
+@media(min-width:768px){#toast{bottom:40px}}
+
+.empty{
+  text-align:center;color:var(--sub);font-size:13px;padding:40px 10px;
+}
+.empty i{font-size:34px;display:block;margin-bottom:8px;color:var(--line)}
+
+.connectcard{text-align:center;padding:34px 20px}
+.connectcard i{font-size:36px;color:var(--morning);display:block;margin-bottom:10px}
+.connectcard p{font-size:13px;color:var(--sub);margin-bottom:16px}
+.connectcard button{
+  border:none;background:var(--morning);color:#fff;font:inherit;font-size:15px;font-weight:700;
+  border-radius:999px;padding:12px 30px;cursor:pointer;letter-spacing:.06em;
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><i class="bi bi-journal-bookmark-fill"></i>からだ記録帳</h1>
+  <div class="spacer"></div>
+  <div class="status" id="status"><span class="dot"></span><span id="statusText">未接続</span></div>
+  <button class="iconbtn" id="btnRefresh" title="再読み込み"><i class="bi bi-arrow-clockwise"></i></button>
+  <button class="iconbtn" id="btnSettings" title="設定"><i class="bi bi-gear"></i></button>
+</header>
+
+<nav class="tabs">
+  <button data-view="input" class="active"><i class="bi bi-pencil-square"></i>きょうの記録</button>
+  <button data-view="chart"><i class="bi bi-graph-up"></i>グラフ</button>
+  <button data-view="list"><i class="bi bi-card-list"></i>これまで</button>
+</nav>
+
+<main>
+
+<!-- ===== 入力 ===== -->
+<section class="view active" id="view-input">
+
+  <div class="card connectcard" id="connectCard" style="display:none">
+    <i class="bi bi-cloud-sun"></i>
+    <p>Googleに接続すると、記録がスプレッドシートに保存され、<br>写真はドライブに保存されます。</p>
+    <button id="btnConnect"><i class="bi bi-google"></i>　Googleに接続する</button>
+  </div>
+
+  <div class="card">
+    <h2><i class="bi bi-calendar3"></i>日付</h2>
+    <input type="date" id="fDate">
+    <p class="hint" id="loadedHint" style="display:none"><i class="bi bi-info-circle"></i> この日の記録を読み込みました。保存すると上書きされます。</p>
+  </div>
+
+  <div class="card">
+    <h2><i class="bi bi-speedometer2"></i>体重</h2>
+    <div class="row2">
+      <div class="wfield morning">
+        <div class="wlabel"><i class="bi bi-brightness-alt-high"></i>あさ</div>
+        <div class="wwrap"><input type="number" step="0.1" inputmode="decimal" id="fWm" placeholder="--.-"><span>kg</span></div>
+      </div>
+      <div class="wfield evening">
+        <div class="wlabel"><i class="bi bi-moon-stars"></i>よる</div>
+        <div class="wwrap"><input type="number" step="0.1" inputmode="decimal" id="fWe" placeholder="--.-"><span>kg</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><i class="bi bi-heart-pulse"></i>からだの調子</h2>
+    <div class="togglegrid">
+      <div>
+        <label class="fl">排便</label>
+        <div class="seg" id="segBowel">
+          <button data-v="あり">あり</button>
+          <button data-v="なし">なし</button>
+        </div>
+      </div>
+      <div>
+        <label class="fl">月経</label>
+        <div class="seg pink" id="segPeriod">
+          <button data-v="あり">あり</button>
+          <button data-v="なし">なし</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><i class="bi bi-cup-hot"></i>食事</h2>
+    <textarea id="fMeal" rows="6" placeholder="朝 7:30　トースト、ヨーグルト、コーヒー
+昼 12:15　お弁当（鮭、卵焼き、ブロッコリー）
+夜 19:30　豚汁、ごはん、サラダ
+その他 15:00　チョコ2粒"></textarea>
+    <div class="photobar" id="photoBar">
+      <button class="addphoto" id="btnAddPhoto" title="写真を追加"><i class="bi bi-camera"></i></button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+    <p class="hint">写真はGoogleドライブの指定フォルダに保存されます。</p>
+  </div>
+
+  <div class="card">
+    <h2><i class="bi bi-person-arms-up"></i>運動メニュー</h2>
+    <textarea id="fExercise" rows="3" placeholder="ウォーキング30分、スクワット15回×2セット　など"></textarea>
+  </div>
+
+  <div class="card">
+    <h2><i class="bi bi-pencil"></i>きょうの日記</h2>
+    <textarea id="fDiary" rows="4" placeholder="きょうのできごと、気づいたことをひとこと。"></textarea>
+  </div>
+
+  <button class="savebtn" id="btnSave"><i class="bi bi-cloud-arrow-up"></i>　保存する</button>
+</section>
+
+<!-- ===== グラフ ===== -->
+<section class="view" id="view-chart">
+  <div class="card">
+    <h2><i class="bi bi-graph-up"></i>体重グラフ</h2>
+    <div class="chartmodes" id="chartModes">
+      <button class="chip m sel" data-mode="morning">あさ</button>
+      <button class="chip e" data-mode="evening">よる</button>
+      <button class="chip b" data-mode="both">あさ＋よる</button>
+    </div>
+    <div class="chartmodes" id="chartRange">
+      <button class="chip p sel" data-days="30">30日</button>
+      <button class="chip p" data-days="90">90日</button>
+      <button class="chip p" data-days="0">すべて</button>
+    </div>
+    <div class="chartbox"><canvas id="chartCanvas"></canvas></div>
+    <p class="legendnote"><span class="sk"></span>グラフ下部の桜色の点は月経のあった日です。</p>
+  </div>
+</section>
+
+<!-- ===== 一覧 ===== -->
+<section class="view" id="view-list">
+  <div class="reclist" id="recList"></div>
+  <div class="tablewrap" id="recTableWrap">
+    <table>
+      <thead><tr>
+        <th>日付</th><th>朝(kg)</th><th>夜(kg)</th><th>排便</th><th>月経</th>
+        <th>食事</th><th>運動</th><th>日記</th><th>写真</th><th></th>
+      </tr></thead>
+      <tbody id="recTbody"></tbody>
+    </table>
+  </div>
+  <div class="empty" id="emptyMsg" style="display:none">
+    <i class="bi bi-journal"></i>まだ記録がありません。<br>「きょうの記録」から書きはじめましょう。
+  </div>
+</section>
+
+</main>
+
+<!-- ===== 設定モーダル ===== -->
+<div class="modal" id="settingsModal">
+  <div class="mbox">
+    <h2><i class="bi bi-gear"></i> はじめの設定</h2>
+    <p>Google CloudのクライアントID、保存先スプレッドシートID、写真用ドライブフォルダIDを入力してください。この端末のブラウザに保存されます。</p>
+    <label class="fl">OAuth クライアントID</label>
+    <input type="text" id="setClientId" placeholder="xxxx.apps.googleusercontent.com">
+    <label class="fl">スプレッドシートID（URLの /d/ と /edit の間）</label>
+    <input type="text" id="setSheetId" placeholder="1AbCdEf...">
+    <label class="fl">ドライブフォルダID（フォルダURLの folders/ 以降）</label>
+    <input type="text" id="setFolderId" placeholder="1XyZ...">
+    <div class="mrow">
+      <button class="btn-s" id="setCancel">閉じる</button>
+      <button class="btn-p" id="setSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ================= 設定 ================= */
+const LS_KEY = "karadaKirokuCfg";
+const SHEET_NAME = "記録";
+const HEADER = ["日付","朝体重","夜体重","排便","月経","食事","運動","日記","写真ID","更新日時"];
+let cfg = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+
+let tokenClient = null;
+let accessToken = null;
+let tokenExpiresAt = 0;
+let records = [];          // {date, wm, we, bowel, period, meal, exercise, diary, photos[], updated, rowIndex}
+let sheetReady = false;
+let pendingPhotos = [];    // {file, previewUrl}  … 新規追加分
+let existingPhotoIds = []; // 編集時の既存写真ID
+let chartMode = "morning";
+let chartDays = 30;
+let chartObj = null;
+
+/* ================= ユーティリティ ================= */
+const $ = id => document.getElementById(id);
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm = setTimeout(()=>t.classList.remove("show"), 2600);
+}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function fmtDateJP(s){
+  const [y,m,d] = s.split("-").map(Number);
+  const wd = "日月火水木金土"[new Date(y, m-1, d).getDay()];
+  return `${y}年${m}月${d}日（${wd}）`;
+}
+function esc(s){
+  return String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function setStatus(on, text){
+  $("status").classList.toggle("on", on);
+  $("statusText").textContent = text;
+}
+
+/* ================= Google認証 ================= */
+function initAuth(){
+  if(!cfg.clientId){ openSettings(); return; }
+  const boot = ()=>{
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: cfg.clientId,
+      scope: "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file",
+      callback: (resp)=>{
+        if(resp.error){ toast("認証エラー: "+resp.error); return; }
+        accessToken = resp.access_token;
+        tokenExpiresAt = Date.now() + (resp.expires_in - 60) * 1000;
+        setStatus(true, "接続中");
+        $("connectCard").style.display = "none";
+        ensureSheetAndLoad();
+      }
+    });
+    $("connectCard").style.display = accessToken ? "none" : "";
+  };
+  if(window.google && google.accounts){ boot(); }
+  else{ setTimeout(initAuth, 300); }
+}
+function connect(interactive){
+  if(!tokenClient){ openSettings(); return; }
+  tokenClient.requestAccessToken({prompt: interactive ? "consent" : ""});
+}
+async function gFetch(url, opts = {}, retry = true){
+  if(!accessToken || Date.now() > tokenExpiresAt){
+    connect(false);
+    throw new Error("再接続中です。もう一度お試しください。");
+  }
+  opts.headers = Object.assign({}, opts.headers, {Authorization: "Bearer " + accessToken});
+  const res = await fetch(url, opts);
+  if(res.status === 401 && retry){
+    accessToken = null; connect(false);
+    throw new Error("接続の有効期限が切れました。再接続してください。");
+  }
+  if(!res.ok){
+    const body = await res.text().catch(()=> "");
+    throw new Error("API エラー ("+res.status+") " + body.slice(0,200));
+  }
+  return res;
+}
+
+/* ================= シート ================= */
+async function ensureSheetAndLoad(){
+  try{
+    setStatus(true, "読込中…");
+    const meta = await (await gFetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}?fields=sheets.properties.title`
+    )).json();
+    const titles = (meta.sheets||[]).map(s=>s.properties.title);
+    if(!titles.includes(SHEET_NAME)){
+      await gFetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}:batchUpdate`,{
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({requests:[{addSheet:{properties:{title:SHEET_NAME}}}]})
+      });
+      await gFetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/${encodeURIComponent(SHEET_NAME+"!A1:J1")}?valueInputOption=USER_ENTERED`,
+        {method:"PUT", headers:{"Content-Type":"application/json"},
+         body: JSON.stringify({values:[HEADER]})}
+      );
+    }
+    sheetReady = true;
+    await loadRecords();
+    setStatus(true, "接続中");
+  }catch(e){
+    setStatus(false, "エラー");
+    toast(e.message);
+  }
+}
+async function loadRecords(){
+  const data = await (await gFetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/${encodeURIComponent(SHEET_NAME+"!A2:J")}`
+  )).json();
+  const rows = data.values || [];
+  records = rows.map((r,i)=>({
+    date: r[0]||"", wm: r[1]||"", we: r[2]||"", bowel: r[3]||"", period: r[4]||"",
+    meal: r[5]||"", exercise: r[6]||"", diary: r[7]||"",
+    photos: (r[8]||"").split(",").map(s=>s.trim()).filter(Boolean),
+    updated: r[9]||"", rowIndex: i+2
+  })).filter(r=>r.date);
+  records.sort((a,b)=> a.date < b.date ? 1 : -1);
+  renderList();
+  renderChart();
+  prefillIfExists($("fDate").value);
+}
+
+/* ================= 写真 ================= */
+function resizeImage(file, maxSide = 1280, quality = 0.82){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      let {width:w, height:h} = img;
+      if(Math.max(w,h) > maxSide){
+        const k = maxSide / Math.max(w,h); w = Math.round(w*k); h = Math.round(h*k);
+      }
+      const cv = document.createElement("canvas"); cv.width=w; cv.height=h;
+      cv.getContext("2d").drawImage(img,0,0,w,h);
+      cv.toBlob(b=>{ URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error("画像変換に失敗しました")); }, "image/jpeg", quality);
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error("画像を読み込めませんでした")); };
+    img.src = url;
+  });
+}
+function blobToBase64(blob){
+  return new Promise((res, rej)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(r.result.split(",")[1]);
+    r.onerror = ()=>rej(new Error("読み込みに失敗しました"));
+    r.readAsDataURL(blob);
+  });
+}
+async function uploadPhoto(file, dateStr, idx){
+  const blob = await resizeImage(file);
+  const b64 = await blobToBase64(blob);
+  const meta = {name: `${dateStr}_meal_${Date.now()}_${idx}.jpg`, parents:[cfg.folderId]};
+  const boundary = "karadaKiroku" + Math.random().toString(36).slice(2);
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
+    JSON.stringify(meta) +
+    `\r\n--${boundary}\r\nContent-Type: image/jpeg\r\nContent-Transfer-Encoding: base64\r\n\r\n` +
+    b64 + `\r\n--${boundary}--`;
+  const res = await gFetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+    {method:"POST", headers:{"Content-Type":`multipart/related; boundary=${boundary}`}, body}
+  );
+  return (await res.json()).id;
+}
+function thumbUrl(id){ return `https://drive.google.com/thumbnail?id=${id}&sz=w400`; }
+function viewUrl(id){ return `https://drive.google.com/file/d/${id}/view`; }
+
+function renderPhotoBar(){
+  const bar = $("photoBar");
+  bar.querySelectorAll(".thumbwrap").forEach(el=>el.remove());
+  const add = $("btnAddPhoto");
+  existingPhotoIds.forEach(id=>{
+    const w = document.createElement("div"); w.className = "thumbwrap";
+    w.innerHTML = `<img class="thumb" src="${thumbUrl(id)}" alt="保存済みの写真">
+      <button class="del" title="この写真を記録から外す"><i class="bi bi-x"></i></button>`;
+    w.querySelector(".del").onclick = ()=>{ existingPhotoIds = existingPhotoIds.filter(x=>x!==id); renderPhotoBar(); };
+    bar.insertBefore(w, add);
+  });
+  pendingPhotos.forEach((p,i)=>{
+    const w = document.createElement("div"); w.className = "thumbwrap";
+    w.innerHTML = `<img class="thumb" src="${p.previewUrl}" alt="アップロード予定の写真">
+      <button class="del" title="取り消す"><i class="bi bi-x"></i></button>`;
+    w.querySelector(".del").onclick = ()=>{ URL.revokeObjectURL(p.previewUrl); pendingPhotos.splice(i,1); renderPhotoBar(); };
+    bar.insertBefore(w, add);
+  });
+}
+
+/* ================= 保存 ================= */
+async function saveRecord(){
+  if(!sheetReady){ toast("先にGoogleに接続してください"); connect(true); return; }
+  const date = $("fDate").value;
+  if(!date){ toast("日付を入力してください"); return; }
+  const btn = $("btnSave");
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i>　保存中…';
+  try{
+    let photoIds = [...existingPhotoIds];
+    for(let i=0;i<pendingPhotos.length;i++){
+      btn.innerHTML = `<i class="bi bi-camera"></i>　写真を保存中 (${i+1}/${pendingPhotos.length})…`;
+      photoIds.push(await uploadPhoto(pendingPhotos[i].file, date, i));
+    }
+    const now = new Date();
+    const updated = now.toLocaleString("ja-JP");
+    const rowVals = [
+      date, $("fWm").value, $("fWe").value,
+      segValue("segBowel"), segValue("segPeriod"),
+      $("fMeal").value, $("fExercise").value, $("fDiary").value,
+      photoIds.join(","), updated
+    ];
+    const existing = records.find(r=>r.date === date);
+    if(existing){
+      await gFetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/${encodeURIComponent(SHEET_NAME+"!A"+existing.rowIndex+":J"+existing.rowIndex)}?valueInputOption=USER_ENTERED`,
+        {method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({values:[rowVals]})}
+      );
+    }else{
+      await gFetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/${encodeURIComponent(SHEET_NAME+"!A1:J1")}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+        {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({values:[rowVals]})}
+      );
+    }
+    pendingPhotos.forEach(p=>URL.revokeObjectURL(p.previewUrl));
+    pendingPhotos = [];
+    existingPhotoIds = photoIds;
+    await loadRecords();
+    toast("保存しました 🌿");
+  }catch(e){
+    toast(e.message);
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-cloud-arrow-up"></i>　保存する';
+  }
+}
+
+/* ================= 入力フォーム ================= */
+function segValue(id){
+  const b = document.querySelector(`#${id} button.sel`);
+  return b ? b.dataset.v : "";
+}
+function setSeg(id, v){
+  document.querySelectorAll(`#${id} button`).forEach(b=>b.classList.toggle("sel", b.dataset.v === v));
+}
+function clearForm(){
+  $("fWm").value = ""; $("fWe").value = "";
+  setSeg("segBowel",""); setSeg("segPeriod","");
+  $("fMeal").value = ""; $("fExercise").value = ""; $("fDiary").value = "";
+  pendingPhotos.forEach(p=>URL.revokeObjectURL(p.previewUrl));
+  pendingPhotos = []; existingPhotoIds = [];
+  renderPhotoBar();
+  $("loadedHint").style.display = "none";
+}
+function prefillIfExists(date){
+  const r = records.find(x=>x.date === date);
+  if(!r){ clearForm(); return; }
+  $("fWm").value = r.wm; $("fWe").value = r.we;
+  setSeg("segBowel", r.bowel); setSeg("segPeriod", r.period);
+  $("fMeal").value = r.meal; $("fExercise").value = r.exercise; $("fDiary").value = r.diary;
+  pendingPhotos.forEach(p=>URL.revokeObjectURL(p.previewUrl));
+  pendingPhotos = [];
+  existingPhotoIds = [...r.photos];
+  renderPhotoBar();
+  $("loadedHint").style.display = "";
+}
+
+/* ================= 一覧 ================= */
+function recBadges(r){
+  let h = "";
+  if(r.bowel === "あり") h += `<span class="badge bm">排便</span>`;
+  if(r.period === "あり") h += `<span class="badge pk">月経</span>`;
+  return h;
+}
+function renderList(){
+  const list = $("recList"), tbody = $("recTbody");
+  list.innerHTML = ""; tbody.innerHTML = "";
+  $("emptyMsg").style.display = records.length ? "none" : "";
+  records.forEach(r=>{
+    /* --- スマホ用カード --- */
+    const card = document.createElement("div");
+    card.className = "rec";
+    card.innerHTML = `
+      <div class="rhead">
+        <span class="rdate">${esc(fmtDateJP(r.date))}</span>${recBadges(r)}
+        <button class="editbtn"><i class="bi bi-pencil"></i> 編集</button>
+      </div>
+      <div class="weights">
+        ${r.wm ? `<span>あさ <span class="m">${esc(r.wm)}</span> kg</span>` : ""}
+        ${r.we ? `<span>よる <span class="e">${esc(r.we)}</span> kg</span>` : ""}
+      </div>
+      ${r.meal ? `<div class="fieldrow"><span class="fl2">食事</span>${esc(r.meal)}</div>` : ""}
+      ${r.exercise ? `<div class="fieldrow"><span class="fl2">運動</span>${esc(r.exercise)}</div>` : ""}
+      ${r.diary ? `<div class="fieldrow"><span class="fl2">日記</span>${esc(r.diary)}</div>` : ""}
+      ${r.photos.length ? `<div class="rphotos">${r.photos.map(id=>
+        `<a href="${viewUrl(id)}" target="_blank" rel="noopener"><img src="${thumbUrl(id)}" alt="食事写真" loading="lazy"></a>`).join("")}</div>` : ""}
+    `;
+    card.querySelector(".editbtn").onclick = ()=>editRecord(r.date);
+    list.appendChild(card);
+
+    /* --- PC用テーブル行 --- */
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="white-space:nowrap">${esc(r.date)}</td>
+      <td class="num m">${esc(r.wm)}</td>
+      <td class="num e">${esc(r.we)}</td>
+      <td>${esc(r.bowel)}</td>
+      <td>${r.period === "あり" ? '<span class="badge pk">あり</span>' : esc(r.period)}</td>
+      <td><div class="pre">${esc(r.meal)}</div></td>
+      <td><div class="pre">${esc(r.exercise)}</div></td>
+      <td><div class="pre">${esc(r.diary)}</div></td>
+      <td style="white-space:nowrap">${r.photos.map(id=>
+        `<a href="${viewUrl(id)}" target="_blank" rel="noopener"><img src="${thumbUrl(id)}" alt="食事写真" loading="lazy"></a>`).join("")}</td>
+      <td><button class="editbtn"><i class="bi bi-pencil"></i></button></td>
+    `;
+    tr.querySelector(".editbtn").onclick = ()=>editRecord(r.date);
+    tbody.appendChild(tr);
+  });
+}
+function editRecord(date){
+  $("fDate").value = date;
+  prefillIfExists(date);
+  switchView("input");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+/* ================= グラフ ================= */
+function renderChart(){
+  const cv = $("chartCanvas");
+  if(!cv || typeof Chart === "undefined") return;
+  let rows = [...records].sort((a,b)=> a.date < b.date ? -1 : 1);
+  if(chartDays > 0){
+    const limit = new Date(); limit.setDate(limit.getDate() - chartDays);
+    const ls = limit.toISOString().slice(0,10);
+    rows = rows.filter(r=>r.date >= ls);
+  }
+  const labels = rows.map(r=>r.date.slice(5).replace("-","/"));
+  const mData = rows.map(r=> r.wm ? parseFloat(r.wm) : null);
+  const eData = rows.map(r=> r.we ? parseFloat(r.we) : null);
+  const allVals = [...mData, ...eData].filter(v=>v!=null);
+  const minW = allVals.length ? Math.min(...allVals) : 0;
+  const periodData = rows.map(r=> r.period === "あり" && allVals.length ? minW - 0.6 : null);
+
+  const datasets = [];
+  const lineOpt = (label, data, color)=>({
+    label, data, borderColor: color, backgroundColor: color,
+    tension: .3, spanGaps: true, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2
+  });
+  if(chartMode === "morning" || chartMode === "both") datasets.push(lineOpt("あさ", mData, "#5E9275"));
+  if(chartMode === "evening" || chartMode === "both") datasets.push(lineOpt("よる", eData, "#8377AB"));
+  datasets.push({
+    label:"月経", data: periodData, showLine:false,
+    pointStyle:"circle", pointRadius:4, pointHoverRadius:5,
+    borderColor:"#E7A9B8", backgroundColor:"#E7A9B8"
+  });
+
+  if(chartObj) chartObj.destroy();
+  chartObj = new Chart(cv, {
+    type:"line",
+    data:{labels, datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:"index", intersect:false},
+      plugins:{
+        legend:{labels:{font:{family:"'Zen Maru Gothic',sans-serif"}, usePointStyle:true, boxHeight:7}},
+        tooltip:{
+          callbacks:{
+            label:(c)=> c.dataset.label === "月経" ? "月経あり" : `${c.dataset.label} ${c.parsed.y} kg`
+          }
+        }
+      },
+      scales:{
+        y:{title:{display:true, text:"kg"}, grid:{color:"#E7ECE7"}},
+        x:{grid:{display:false}, ticks:{maxTicksLimit:10}}
+      }
+    }
+  });
+}
+
+/* ================= 設定 ================= */
+function openSettings(){
+  $("setClientId").value = cfg.clientId || "";
+  $("setSheetId").value = cfg.sheetId || "";
+  $("setFolderId").value = cfg.folderId || "";
+  $("settingsModal").classList.add("open");
+}
+function saveSettings(){
+  const idFromUrl = (v, re)=>{ const m = String(v).match(re); return m ? m[1] : v.trim(); };
+  cfg.clientId = $("setClientId").value.trim();
+  cfg.sheetId = idFromUrl($("setSheetId").value, /\/d\/([a-zA-Z0-9_-]+)/);
+  cfg.folderId = idFromUrl($("setFolderId").value, /folders\/([a-zA-Z0-9_-]+)/);
+  localStorage.setItem(LS_KEY, JSON.stringify(cfg));
+  $("settingsModal").classList.remove("open");
+  toast("設定を保存しました");
+  accessToken = null; sheetReady = false;
+  initAuth();
+}
+
+/* ================= 画面切替 ================= */
+function switchView(name){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("active", b.dataset.view === name));
+  document.querySelectorAll("section.view").forEach(s=>s.classList.toggle("active", s.id === "view-"+name));
+  if(name === "chart") renderChart();
+}
+
+/* ================= イベント ================= */
+document.addEventListener("DOMContentLoaded", ()=>{
+  $("fDate").value = todayStr();
+  $("fDate").addEventListener("change", e=>prefillIfExists(e.target.value));
+
+  document.querySelectorAll("nav.tabs button").forEach(b=>
+    b.addEventListener("click", ()=>switchView(b.dataset.view)));
+
+  ["segBowel","segPeriod"].forEach(id=>{
+    document.querySelectorAll(`#${id} button`).forEach(b=>{
+      b.addEventListener("click", ()=>{
+        const was = b.classList.contains("sel");
+        document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.remove("sel"));
+        if(!was) b.classList.add("sel");
+      });
+    });
+  });
+
+  $("btnAddPhoto").addEventListener("click", ()=>$("fileInput").click());
+  $("fileInput").addEventListener("change", e=>{
+    [...e.target.files].forEach(f=>{
+      if(!f.type.startsWith("image/")) return;
+      pendingPhotos.push({file:f, previewUrl:URL.createObjectURL(f)});
+    });
+    e.target.value = "";
+    renderPhotoBar();
+  });
+
+  $("btnSave").addEventListener("click", saveRecord);
+  $("btnConnect").addEventListener("click", ()=>connect(true));
+  $("btnSettings").addEventListener("click", openSettings);
+  $("setSave").addEventListener("click", saveSettings);
+  $("setCancel").addEventListener("click", ()=>$("settingsModal").classList.remove("open"));
+  $("btnRefresh").addEventListener("click", ()=>{ if(sheetReady) loadRecords().then(()=>toast("再読み込みしました")); else connect(true); });
+
+  document.querySelectorAll("#chartModes .chip").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      document.querySelectorAll("#chartModes .chip").forEach(x=>x.classList.remove("sel"));
+      b.classList.add("sel"); chartMode = b.dataset.mode; renderChart();
+    });
+  });
+  document.querySelectorAll("#chartRange .chip").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      document.querySelectorAll("#chartRange .chip").forEach(x=>x.classList.remove("sel"));
+      b.classList.add("sel"); chartDays = Number(b.dataset.days); renderChart();
+    });
+  });
+
+  if(cfg.clientId && cfg.sheetId && cfg.folderId){
+    initAuth();
+    // 少し待ってから静かに接続を試みる
+    setTimeout(()=>{ if(tokenClient && !accessToken) connect(false); }, 800);
+  }else{
+    openSettings();
+  }
+});
+</script>
+</body>
+</html>
