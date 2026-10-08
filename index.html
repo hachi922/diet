@@ -531,22 +531,46 @@ function setMp3Btn(st){
   if(st)b.dataset.st=st;
   b.textContent={idle:'🎵 再生',load:'読み込み中…',play:'■ 停止'}[b.dataset.st||'idle'];
 }
+// ファイルの先頭バイトから音声の種類を判定する(Driveの種類表示に頼らない)
+function sniffAudio(a){
+  const at=(i,s)=>[...s].every((c,k)=>a[i+k]===c.charCodeAt(0));
+  if(at(0,'ID3'))return 'audio/mpeg';
+  if(a[0]===0xFF&&(a[1]&0xE0)===0xE0)return 'audio/mpeg';
+  if(at(0,'RIFF')&&at(8,'WAVE'))return 'audio/wav';
+  if(at(4,'ftyp'))return 'audio/mp4';
+  if(at(0,'OggS'))return 'audio/ogg';
+  if(at(0,'fLaC'))return 'audio/flac';
+  return '';
+}
 async function loadAudio(){
   if(audioURL)return audioURL;
   const meta=await apiGet({action:'audio',meta:'1'});
   if(meta.error)throw new Error(meta.error);
-  const ck='/a/'+meta.id+'_'+meta.ver;
+  const ck='/a2/'+meta.id+'_'+meta.ver;
   let blob=null;
-  try{if('caches' in window){const c=await caches.open('diet-audio');const m=await c.match(ck);if(m)blob=await m.blob()}}catch(e){}
+  try{
+    if('caches' in window){
+      caches.delete('diet-audio');
+      const c=await caches.open('diet-audio2');
+      const m=await c.match(ck);
+      if(m)blob=await m.blob();
+    }
+  }catch(e){}
+  if(blob&&!blob.type)blob=new Blob([blob],{type:'audio/mpeg'});
   if(!blob){
     const j=await apiGet({action:'audio'});
     if(j.error)throw new Error(j.error);
     const bin=atob(j.data), arr=new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
-    blob=new Blob([arr],{type:j.mime||'audio/mpeg'});
+    const type=sniffAudio(arr);
+    if(!type){
+      const head=[...arr.slice(0,12)].map(x=>x.toString(16).padStart(2,'0')).join(' ');
+      throw new Error(`音声ファイルではないようです(取得サイズ ${arr.length} バイト、先頭 ${head})。Code.gsのMP3_FILE_IDがMP3ファイルのIDか確認してください`);
+    }
+    blob=new Blob([arr],{type});
     try{
       if('caches' in window){
-        const c=await caches.open('diet-audio');
+        const c=await caches.open('diet-audio2');
         await c.put(ck,new Response(blob));
         for(const k of await c.keys()){if(!k.url.endsWith(ck))await c.delete(k)}
       }
@@ -571,8 +595,8 @@ async function toggleMp3(){
     audioEl.onended=()=>setMp3Btn('idle');
     setMp3Btn('play');
   }catch(e){
-    setMp3Btn('idle');
-    alert('再生できませんでした: '+e.message);
+    setMp3Btn('idle'); audioURL=null;
+    alert('再生できませんでした: '+e.message+(e.name==='NotSupportedError'?'(この端末のブラウザで再生できない形式の可能性があります)':''));
   }finally{audioLoading=false}
 }
 $('#mp3Btn').onclick=toggleMp3;
