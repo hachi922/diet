@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fbf6e8">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ダイエット記録">
-<title>ダイエット記録</title>
+<meta name="apple-mobile-web-app-title" content="Kalorino">
+<title>Kalorino</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Pacifico&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <style>
 :root{--bg:#fbf6e8;--card:#fffdf6;--ink:#4a4640;--sub:#9a9385;--line:#efe7d2;--acc:#dc9b88;--acc2:#9bbba6;--accbg:#fbece3;--up:#d27b6c;--down:#5e9e87}
@@ -18,7 +18,7 @@
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Zen Maru Gothic',system-ui,-apple-system,'Hiragino Maru Gothic ProN',sans-serif;font-size:16px;line-height:1.5}
 #app{max-width:720px;margin:0 auto;padding:12px 14px calc(84px + env(safe-area-inset-bottom))}
 header{display:flex;justify-content:space-between;align-items:center;margin:4px 0 12px}
-h1{font-size:1.15rem;margin:0}
+h1{font-family:'Pacifico','Zen Maru Gothic',cursive;font-weight:400;font-size:1.45rem;margin:0}
 h2{font-size:.95rem;margin:0 0 8px}
 h2 small{font-weight:400;color:var(--sub);margin-left:6px;font-size:.75rem}
 .status{border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:999px;padding:3px 10px;font:inherit;font-size:.72rem;cursor:pointer}
@@ -58,6 +58,7 @@ textarea{resize:none;overflow:hidden;min-height:44px;line-height:1.6}
 .stat{flex:1;min-width:6.5em;background:var(--bg);border-radius:12px;padding:8px 10px}
 .stat span{display:block;font-size:.7rem;color:var(--sub)}
 .stat b{font-size:1.05rem}
+.stat b.up{color:var(--up)}.stat b.down{color:var(--down)}
 .sub{color:var(--sub);font-size:.78rem;margin:6px 0 0}
 .wrow{display:grid;grid-template-columns:5.8em 1fr 4.5em 2em;gap:8px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
 .wrow input{padding:5px 8px}
@@ -88,7 +89,7 @@ nav button.on{color:var(--acc);font-weight:700}
 </head>
 <body>
 <div id="app">
-<header><h1>ダイエット記録</h1><div class="hbtns"><button id="mp3Btn" class="status" hidden>🎵 再生</button><button id="status" class="status" data-s="local">読み込み中…</button></div></header>
+<header><h1>Kalorino</h1><div class="hbtns"><button id="mp3Btn" class="status" hidden>🎵 再生</button><button id="status" class="status" data-s="local">読み込み中…</button></div></header>
 
 <!-- 日記 -->
 <section class="view" id="v-diary">
@@ -216,8 +217,8 @@ nav button.on{color:var(--acc);font-weight:700}
 </div>
 
 <nav><div class="in">
-  <button data-t="diary" class="on"><i>📝</i>日記</button>
   <button data-t="weight"><i>⚖️</i>体重</button>
+  <button data-t="diary" class="on"><i>📝</i>日記</button>
   <button data-t="chart"><i>📈</i>グラフ</button>
   <button data-t="history"><i>📅</i>履歴</button>
   <button data-t="settings"><i>⚙️</i>設定</button>
@@ -575,16 +576,35 @@ $('#mp3Btn').onclick=toggleMp3;
 
 /* ---------- 体重 ---------- */
 const yearOpen={};
+// 指定日にいちばん近い記録(許容日数以内)を返す
+function nearestRec(asc,date,tol){
+  const t=parseD(date).getTime();
+  let best=null,bd=1e9;
+  asc.forEach(p=>{
+    const d=Math.abs((parseD(p.date).getTime()-t)/86400000);
+    if(d<=tol&&d<bd){best=p;bd=d}
+  });
+  return best;
+}
 function renderWeight(){
   if(!$('#wDate').value)$('#wDate').value=today();
   const asc=weightList(), sm=$('#wSummary'), wrap=$('#wList');
   wrap.innerHTML='';
   if(!asc.length){sm.innerHTML='<p class="sub" style="margin:0">まだ記録がありません</p>';return}
   const last=asc[asc.length-1], first=asc[0], goal=parseFloat(cfg.goal);
-  const mk=(t,v)=>`<div class="stat"><span>${t}</span><b>${v}</b></div>`;
-  let h=mk('最新',last.w.toFixed(1)+' kg')+mk('開始比',signed(last.w-first.w)+' kg');
+  const mk=(t,v,c='')=>`<div class="stat"><span>${t}</span><b class="${c}">${v}</b></div>`;
+  const cl=n=>n>0.04?'up':n<-0.04?'down':'';
+  let h=mk('最新',last.w.toFixed(1)+' kg');
+  const prev=asc.length>1?asc[asc.length-2]:null;
+  if(prev){
+    const gap=Math.round((parseD(last.date)-parseD(prev.date))/86400000);
+    h+=mk(gap===1?'前日比':`前回比(${gap}日前)`,signed(last.w-prev.w)+' kg',cl(last.w-prev.w));
+  }else h+=mk('前日比','--');
+  const wk=nearestRec(asc,addDays(last.date,-7),3);
+  h+=mk('前週比',wk?signed(last.w-wk.w)+' kg':'--',wk?cl(last.w-wk.w):'');
+  h+=mk('開始比',signed(last.w-first.w)+' kg',cl(last.w-first.w));
   if(goal) h+=mk('目標まで',last.w>goal?`あと ${(last.w-goal).toFixed(1)} kg`:'達成!');
-  sm.innerHTML=`<div class="stats">${h}</div><p class="sub">${last.date.replace(/-/g,'/')} 時点</p>`;
+  sm.innerHTML=`<div class="stats">${h}</div><p class="sub">${last.date.replace(/-/g,'/')} 時点 ・ 前週比は7日前に最も近い記録(±3日以内)との差です</p>`;
   const rows=asc.map((p,i)=>({date:p.date,w:p.w,diff:i?p.w-asc[i-1].w:null})).reverse();
   const byYear=new Map();
   rows.forEach(r=>{const y=r.date.slice(0,4);if(!byYear.has(y))byYear.set(y,[]);byYear.get(y).push(r)});
