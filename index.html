@@ -22,6 +22,8 @@ h1{font-size:1.15rem;margin:0}
 h2{font-size:.95rem;margin:0 0 8px}
 h2 small{font-weight:400;color:var(--sub);margin-left:6px;font-size:.75rem}
 .status{border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:999px;padding:3px 10px;font:inherit;font-size:.72rem;cursor:pointer}
+.hbtns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+#mp3Btn{color:var(--acc);border-color:var(--acc)}
 .status[data-s=ok]{color:var(--down)}
 .status[data-s=busy]{color:#c9962b}
 .status[data-s=err]{color:var(--up)}
@@ -86,7 +88,7 @@ nav button.on{color:var(--acc);font-weight:700}
 </head>
 <body>
 <div id="app">
-<header><h1>ダイエット記録</h1><button id="status" class="status" data-s="local">読み込み中…</button></header>
+<header><h1>ダイエット記録</h1><div class="hbtns"><button id="mp3Btn" class="status" hidden>🎵 再生</button><button id="status" class="status" data-s="local">読み込み中…</button></div></header>
 
 <!-- 日記 -->
 <section class="view" id="v-diary">
@@ -517,6 +519,60 @@ $('#lbDel').onclick=()=>{
   closeLb(); renderPhotos();
 };
 
+/* ---------- MP3再生(Googleドライブ) ---------- */
+const SILENT_WAV='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+let audioEl=null, audioURL=null, audioLoading=false;
+function setMp3Btn(st){
+  const b=$('#mp3Btn'); b.hidden=!cfg.url;
+  if(st)b.dataset.st=st;
+  b.textContent={idle:'🎵 再生',load:'読み込み中…',play:'■ 停止'}[b.dataset.st||'idle'];
+}
+async function loadAudio(){
+  if(audioURL)return audioURL;
+  const meta=await apiGet({action:'audio',meta:'1'});
+  if(meta.error)throw new Error(meta.error);
+  const ck='/a/'+meta.id+'_'+meta.ver;
+  let blob=null;
+  try{if('caches' in window){const c=await caches.open('diet-audio');const m=await c.match(ck);if(m)blob=await m.blob()}}catch(e){}
+  if(!blob){
+    const j=await apiGet({action:'audio'});
+    if(j.error)throw new Error(j.error);
+    const bin=atob(j.data), arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    blob=new Blob([arr],{type:j.mime||'audio/mpeg'});
+    try{
+      if('caches' in window){
+        const c=await caches.open('diet-audio');
+        await c.put(ck,new Response(blob));
+        for(const k of await c.keys()){if(!k.url.endsWith(ck))await c.delete(k)}
+      }
+    }catch(e){}
+  }
+  audioURL=URL.createObjectURL(blob);
+  return audioURL;
+}
+async function toggleMp3(){
+  if(audioEl&&audioURL&&!audioEl.paused){
+    audioEl.pause();audioEl.currentTime=0;setMp3Btn('idle');return;
+  }
+  if(audioLoading)return;
+  // スマホの自動再生制限対策:タップした瞬間に、無音で再生枠を確保しておく
+  if(!audioEl){audioEl=new Audio(SILENT_WAV);audioEl.play().catch(()=>{})}
+  audioLoading=true;setMp3Btn('load');
+  try{
+    const url=await loadAudio();
+    audioEl.onended=null;
+    audioEl.src=url;
+    await audioEl.play();
+    audioEl.onended=()=>setMp3Btn('idle');
+    setMp3Btn('play');
+  }catch(e){
+    setMp3Btn('idle');
+    alert('再生できませんでした: '+e.message);
+  }finally{audioLoading=false}
+}
+$('#mp3Btn').onclick=toggleMp3;
+
 /* ---------- 体重 ---------- */
 const yearOpen={};
 function renderWeight(){
@@ -657,10 +713,11 @@ function renderSettings(){
   $('#sKey').value=cfg.key||'';
 }
 $('#sGoal').onchange=e=>{cfg.goal=e.target.value;saveCfg()};
-$('#sUrl').onchange=e=>{cfg.url=e.target.value.trim();saveCfg();if(cfg.url)sync();else setStatus('local','端末のみ保存')};
+$('#sUrl').onchange=e=>{cfg.url=e.target.value.trim();saveCfg();setMp3Btn();if(cfg.url)sync();else setStatus('local','端末のみ保存')};
 $('#sKey').onchange=e=>{cfg.key=e.target.value;saveCfg()};
 $('#sSync').onclick=()=>{
   cfg.url=$('#sUrl').value.trim();cfg.key=$('#sKey').value;saveCfg();
+  setMp3Btn();
   if(!cfg.url)return alert('URLを入力してください');
   sync();
 };
@@ -691,6 +748,7 @@ $('#bFile').onchange=e=>{
 
 /* ---------- 起動 ---------- */
 show('diary');
+setMp3Btn('idle');
 if(cfg.url)sync();else setStatus('local','端末のみ保存');
 </script>
 </body>
