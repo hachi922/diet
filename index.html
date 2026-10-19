@@ -53,8 +53,9 @@ textarea{resize:none;overflow:hidden;min-height:44px;line-height:1.6}
 .seg button{flex:1;min-width:4.5em;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 6px;cursor:pointer;font-size:.85rem}
 .seg button.on{background:var(--accbg);border-color:var(--acc);color:var(--acc);font-weight:700}
 .saved{text-align:center;color:var(--sub);font-size:.75rem;height:1em;margin:0}
-.addrow{display:grid;grid-template-columns:1fr 6.5em auto;gap:8px}
-.pri{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:8px 16px;cursor:pointer;font-weight:700}
+.addrow{display:grid;grid-template-columns:minmax(0,1fr) 5.5em auto;gap:8px}
+.addrow input{min-width:0}
+.pri{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:8px 16px;cursor:pointer;font-weight:700;white-space:nowrap}
 .pri.sec{background:var(--acc2)}
 .btn{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer}
 .stats{display:flex;gap:8px;flex-wrap:wrap}
@@ -63,8 +64,8 @@ textarea{resize:none;overflow:hidden;min-height:44px;line-height:1.6}
 .stat b{font-size:1.05rem}
 .stat b.up{color:var(--up)}.stat b.down{color:var(--down)}
 .sub{color:var(--sub);font-size:.78rem;margin:6px 0 0}
-.wrow{display:grid;grid-template-columns:5.8em 1fr 4.5em 2em;gap:8px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
-.wrow input{padding:5px 8px}
+.wrow{display:grid;grid-template-columns:auto minmax(6.5em,1fr) 3.2em 1.8em;gap:6px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
+.wrow input{padding:5px 6px;min-width:0}
 .diff{font-size:.8rem;text-align:right;color:var(--sub)}
 .diff.up{color:var(--up)}.diff.down{color:var(--down)}
 .x{border:0;background:none;color:var(--sub);font-size:1.2rem;cursor:pointer}
@@ -148,7 +149,8 @@ nav button.on{color:var(--acc);font-weight:700}
 
   <div class="card">
     <h2>メモ</h2>
-    <textarea data-k="memo" rows="3" placeholder="体調・気分・気づいたこと"></textarea>
+    <textarea data-k="memo" rows="4" placeholder="体調・気分・気づいたこと・日記"></textarea>
+    <div class="photos" data-ph="memo"></div>
   </div>
   <p class="saved" id="saved"></p>
 </section>
@@ -364,7 +366,7 @@ function renderDiary(){
   $('#bcVal').textContent=Number(r.bowelCount)||0;
   $$('#periodSeg button').forEach(b=>b.classList.toggle('on',(r.period||'')===b.dataset.p));
   const w=db.weights[current];
-  $('#dWeight').value=(w&&w.weight!==''&&w.weight!=null)?w.weight:'';
+  $('#dWeight').value=(w&&w.weight!==''&&w.weight!=null&&!isNaN(Number(w.weight)))?Number(w.weight).toFixed(1):'';
   updateCounts();
   renderPhotos();
 }
@@ -392,7 +394,7 @@ $$('#periodSeg button').forEach(b=>b.onclick=()=>{
 });
 
 /* ---------- 写真(Googleドライブ) ---------- */
-const MEALS=['morning','lunch','dinner','snack'];
+const MEALS=['morning','lunch','dinner','snack','memo'];  // 写真を付けられる欄(食事4つ+メモ)
 const pending={};
 let phTarget=null, lbState=null;
 const photoCache=new Map();
@@ -645,7 +647,7 @@ function renderWeight(){
     list.forEach(r=>{
       const row=document.createElement('div');row.className='wrow';
       const d=document.createElement('span');d.textContent=label(r.date);
-      const inp=document.createElement('input');inp.type='number';inp.step='0.1';inp.inputMode='decimal';inp.value=r.w;
+      const inp=document.createElement('input');inp.type='number';inp.step='0.1';inp.inputMode='decimal';inp.value=r.w.toFixed(1);
       inp.onchange=()=>{if(inp.value!=='')setWeight(r.date,inp.value);renderWeight()};
       const df=document.createElement('span');df.className='diff '+(r.diff>0.04?'up':r.diff<-0.04?'down':'');
       df.textContent=r.diff==null?'':signed(r.diff);
