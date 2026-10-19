@@ -75,14 +75,40 @@ textarea{resize:none;overflow:hidden;min-height:44px;line-height:1.6}
 .hrow b{margin-right:8px}
 .hrow span{color:var(--sub);font-size:.8rem}
 .photos{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}
-.th{width:72px;height:72px;border-radius:10px;overflow:hidden;background:var(--bg);border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sub)}
+.photos:empty{display:none}
+.th{width:56px;height:56px;border-radius:10px;overflow:hidden;background:var(--bg);border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--sub)}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
-.addph{height:72px;min-width:72px;padding:0 10px;border:1px dashed var(--line);background:var(--bg);border-radius:10px;color:var(--sub);font-size:.78rem;cursor:pointer}
-.photos:has(.th) .addph{width:72px;padding:0 4px}
+.addph{height:30px;padding:0 12px;border:1px dashed var(--line);background:var(--bg);border-radius:999px;color:var(--sub);font-size:.75rem;cursor:pointer;white-space:nowrap}
 .pend{font-size:.75rem;color:var(--acc)}
 #lb{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
 #lb img{max-width:100%;max-height:78vh;object-fit:contain;border-radius:8px}
 #lb .bar{display:flex;gap:10px}
+/* ---- 日記タブをコンパクトに ---- */
+#v-diary .card{padding:10px 12px;margin-bottom:8px}
+#v-diary h2{margin:0 0 6px;font-size:.92rem}
+#v-diary .fh h2{margin:0}
+#v-diary textarea{padding:6px 10px;line-height:1.5;min-height:38px}
+#v-diary input[type=number],#v-diary select{padding:5px 8px}
+.fh{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px;margin-bottom:4px}
+.fld+.fld{margin-top:8px}
+.fld .fl{margin:0}
+.pb{flex:none}
+.datebar{margin-bottom:8px}
+#v-diary .ic,#v-diary .mini{height:36px;min-width:36px}
+#dLabel{margin:0}
+#dDate{padding:3px 8px}
+.crow{display:flex;align-items:center;gap:8px;padding:5px 0}
+.crow+.crow{border-top:1px solid var(--line)}
+.crl{width:2.4em;flex:none;font-weight:700;font-size:.9rem}
+.crow input[type=number]{width:6.5em}
+.crow .stepper{margin:0;gap:8px}
+.crow .stepper button{width:34px;height:34px;font-size:1.1rem}
+.crow .stepper b{min-width:2.2em;font-size:1.05rem}
+.crow select{flex:1;min-width:0}
+.crow .seg{flex:1;min-width:0;gap:4px}
+.crow .seg button{min-width:0;padding:6px 2px;font-size:.82rem}
+.mins{display:flex;align-items:center;gap:6px;flex:none}
+.mins input{width:5em}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav .in{display:flex;max-width:720px;margin:0 auto}
 nav button{flex:1;border:0;background:none;padding:10px 0 8px;color:var(--sub);font-size:.72rem;cursor:pointer}
@@ -106,50 +132,52 @@ nav button.on{color:var(--acc);font-weight:700}
 
   <div class="card">
     <h2>食事<small>改行で1品ずつ</small></h2>
-    <label class="fl">朝<span class="cnt" data-cnt="morning"></span></label>
-    <textarea data-k="morning" rows="2" placeholder="例:&#10;ごはん&#10;味噌汁"></textarea>
-    <div class="photos" data-ph="morning"></div>
-    <label class="fl">昼<span class="cnt" data-cnt="lunch"></span></label>
-    <textarea data-k="lunch" rows="2"></textarea>
-    <div class="photos" data-ph="lunch"></div>
-    <label class="fl">夜<span class="cnt" data-cnt="dinner"></span></label>
-    <textarea data-k="dinner" rows="2"></textarea>
-    <div class="photos" data-ph="dinner"></div>
-    <label class="fl">間食<span class="cnt" data-cnt="snack"></span></label>
-    <textarea data-k="snack" rows="2"></textarea>
-    <div class="photos" data-ph="snack"></div>
-  </div>
-
-  <div class="card">
-    <h2>体重</h2>
-    <div class="row"><input type="number" id="dWeight" step="0.1" inputmode="decimal" placeholder="--.-"><span>kg</span></div>
-  </div>
-
-  <div class="card">
-    <h2>排便</h2>
-    <div class="stepper"><button id="bcMinus" aria-label="減らす">−</button><b><span id="bcVal">0</span> 回</b><button id="bcPlus" aria-label="増やす">＋</button></div>
-    <select data-k="bowelNote">
-      <option value="">状態(未選択)</option>
-      <option>ふつう</option><option>かため</option><option>やわらかい</option><option>下痢</option>
-    </select>
-  </div>
-
-  <div class="card">
-    <h2>生理</h2>
-    <div class="seg" id="periodSeg">
-      <button data-p="">なし</button><button data-p="開始">開始</button><button data-p="出血中">出血中</button><button data-p="終了">終了</button>
+    <div class="fld">
+      <div class="fh"><label class="fl">朝<span class="cnt" data-cnt="morning"></span></label><span class="pb" data-pb="morning"></span></div>
+      <textarea data-k="morning" rows="1" placeholder="例:ごはん"></textarea>
+      <div class="photos" data-ph="morning"></div>
+    </div>
+    <div class="fld">
+      <div class="fh"><label class="fl">昼<span class="cnt" data-cnt="lunch"></span></label><span class="pb" data-pb="lunch"></span></div>
+      <textarea data-k="lunch" rows="1"></textarea>
+      <div class="photos" data-ph="lunch"></div>
+    </div>
+    <div class="fld">
+      <div class="fh"><label class="fl">夜<span class="cnt" data-cnt="dinner"></span></label><span class="pb" data-pb="dinner"></span></div>
+      <textarea data-k="dinner" rows="1"></textarea>
+      <div class="photos" data-ph="dinner"></div>
+    </div>
+    <div class="fld">
+      <div class="fh"><label class="fl">間食<span class="cnt" data-cnt="snack"></span></label><span class="pb" data-pb="snack"></span></div>
+      <textarea data-k="snack" rows="1"></textarea>
+      <div class="photos" data-ph="snack"></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>運動<small>改行で1種目ずつ</small></h2>
-    <textarea data-k="exercise" rows="2" placeholder="例:&#10;ウォーキング&#10;スクワット 20回"></textarea>
-    <div class="row" style="margin-top:8px"><input type="number" data-k="exerciseMin" inputmode="numeric" placeholder="合計"><span>分</span></div>
+    <div class="crow"><span class="crl">体重</span><input type="number" id="dWeight" step="0.1" inputmode="decimal" placeholder="--.-"><span>kg</span></div>
+    <div class="crow"><span class="crl">排便</span>
+      <div class="stepper"><button id="bcMinus" aria-label="減らす">−</button><b><span id="bcVal">0</span>回</b><button id="bcPlus" aria-label="増やす">＋</button></div>
+      <select data-k="bowelNote">
+        <option value="">状態</option>
+        <option>ふつう</option><option>かため</option><option>やわらかい</option><option>下痢</option>
+      </select>
+    </div>
+    <div class="crow"><span class="crl">生理</span>
+      <div class="seg" id="periodSeg">
+        <button data-p="">なし</button><button data-p="開始">開始</button><button data-p="出血中">出血中</button><button data-p="終了">終了</button>
+      </div>
+    </div>
   </div>
 
   <div class="card">
-    <h2>メモ</h2>
-    <textarea data-k="memo" rows="4" placeholder="体調・気分・気づいたこと・日記"></textarea>
+    <div class="fh"><h2>運動<small>改行で1種目ずつ</small></h2><span class="mins"><input type="number" data-k="exerciseMin" inputmode="numeric" placeholder="合計"><span>分</span></span></div>
+    <textarea data-k="exercise" rows="1" placeholder="例:ウォーキング"></textarea>
+  </div>
+
+  <div class="card">
+    <div class="fh"><h2>メモ<small>日記にも</small></h2><span class="pb" data-pb="memo"></span></div>
+    <textarea data-k="memo" rows="3" data-min="72" placeholder="体調・気分・気づいたこと"></textarea>
     <div class="photos" data-ph="memo"></div>
   </div>
   <p class="saved" id="saved"></p>
@@ -348,7 +376,7 @@ function renderTab(){({diary:renderDiary,weight:renderWeight,chart:renderChart,h
 $$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.t));
 
 /* ---------- 日記 ---------- */
-const autosize=el=>{el.style.height='auto';el.style.height=Math.max(44,el.scrollHeight+2)+'px'};
+const autosize=el=>{el.style.height='auto';el.style.height=Math.max(+el.dataset.min||38,el.scrollHeight+2)+'px'};
 function updateCounts(){
   ['morning','lunch','dinner','snack'].forEach(k=>{
     const n=lines($(`[data-k="${k}"]`).value).length;
@@ -479,12 +507,13 @@ function renderPhotos(){
       const p=document.createElement('span');p.className='pend';p.textContent=`アップロード中 ${pending[meal]}枚…`;box.appendChild(p);
     }
     const add=document.createElement('button');
-    add.type='button';add.className='addph';add.textContent='📷 写真を追加';
+    add.type='button';add.className='addph';add.textContent='📷 写真';
     add.onclick=()=>{
       if(!cfg.url)return alert('写真の保存にはGoogleドライブとの同期設定が必要です(設定タブ)');
       phTarget={meal,date:current};$('#phFile').click();
     };
-    box.appendChild(add);
+    const pb=$(`[data-pb="${meal}"]`);
+    if(pb){pb.innerHTML='';pb.appendChild(add)}else box.appendChild(add);
   });
 }
 async function addPhotos(meal,date,files){
